@@ -1,0 +1,3 @@
+from=C:\work\gotemp\from\sample.properties
+to=C:\work\gotemp\to01
+to=C:\work\gotemp\to02
