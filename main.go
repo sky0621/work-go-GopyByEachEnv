@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 )
 
@@ -70,30 +69,55 @@ func CopyToEachDir(m map[string]string) {
 func ReplaceEachToFile(m map[string]string) {
 	var fp *os.File
 	var err error
+	var fp2 *os.File
+	var err2 error
 	toFiles := m["to"]
 	toArray := strings.Split(toFiles, "$")
 
 	for _, to := range toArray {
 		toSplit := strings.Split(to, "\t")
-		fp, err = os.OpenFile(toSplit[0], os.O_WRONLY, 0)
+		fp, err = os.OpenFile(toSplit[0], os.O_APPEND, 0777)
+		fp2, err2 = os.Create(toSplit[0] + ".tmp")
 		handleErr(err)
+		handleErr(err2)
 		defer fp.Close()
+		defer fp2.Close()
 		scanner := bufio.NewScanner(fp)
+		writer := bufio.NewWriter(fp2)
 		for scanner.Scan() {
 			line := scanner.Text()
-			rep := regexp.MustCompile("`" + toSplit[1] + "`")
-			line = rep.ReplaceAllString(line, toSplit[2])
+			line = strings.Replace(line, toSplit[1], toSplit[2], -1)
+			writer.WriteString(line + "\r\n")
 		}
+		writer.Flush()
 		handleErr(scanner.Err())
 	}
 }
 
+func RenameTmp(m map[string]string) {
+	var err error
+	toFiles := m["to"]
+	toArray := strings.Split(toFiles, "$")
+
+	for _, to := range toArray {
+		toSplit := strings.Split(to, "\t")
+		err = os.Rename(toSplit[0]+".tmp", toSplit[0])
+		handleErr(err)
+	}
+}
+
 func main() {
-	http.HandleFunc("/fs/start", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/gopy/start", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Start!")
 		m := ReadConfig()
 		CopyToEachDir(m)
 		ReplaceEachToFile(m)
+		RenameTmp(m)
+	})
+
+	http.HandleFunc("/gopy/end", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("End!")
+		os.Exit(0)
 	})
 
 	err := http.ListenAndServe(":7109", nil)
