@@ -7,7 +7,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
+
+// Go でのエラーハンドリングのセオリーは？
+// ファイル操作系、より簡易な方法がある？　あまりにダラダラ。
+// この事例ではゴルーチン使えないか・・・！？
+// 複数ソースファイル化！
 
 func handleErr(err error) {
 	if err != nil {
@@ -64,6 +70,7 @@ func CopyToEachDir(m map[string]string) {
 		_, err = io.Copy(dst, src)
 		handleErr(err)
 	}
+	fmt.Println("")
 }
 
 func ReplaceEachToFile(m map[string]string) {
@@ -106,13 +113,32 @@ func RenameTmp(m map[string]string) {
 	}
 }
 
+func ModTime(m map[string]string) time.Time {
+	fromDir := m["fromDir"]
+	fromFile := m["fromFile"]
+	from := fromDir + fromFile
+	fp, err := os.Stat(from)
+	handleErr(err)
+	return fp.ModTime()
+}
+
 func main() {
 	http.HandleFunc("/gopy/start", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Start!")
 		m := ReadConfig()
-		CopyToEachDir(m)
-		ReplaceEachToFile(m)
-		RenameTmp(m)
+
+		var baseTime time.Time
+		for {
+			var nowTime = ModTime(m)
+			if baseTime != nowTime {
+				CopyToEachDir(m)
+				ReplaceEachToFile(m)
+				RenameTmp(m)
+				baseTime = nowTime
+			}
+
+			time.Sleep(10 * time.Second)
+		}
 	})
 
 	http.HandleFunc("/gopy/end", func(w http.ResponseWriter, r *http.Request) {
