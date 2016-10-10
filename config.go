@@ -17,8 +17,8 @@ type Config struct {
 // [MEMO] 雑すぎ・・・。
 func readConfig() *Config {
 	var fp *os.File
-	// [MEMO] main.goの階層からの相対パスなので１個上へ
-	fp, err := os.OpenFile("../config.txt", os.O_RDONLY, 0)
+	// [MEMO] main.goの階層からの相対パス
+	fp, err := os.OpenFile("config.txt", os.O_RDONLY, 0)
 	handleErr(err)
 
 	defer fp.Close()
