@@ -14,7 +14,7 @@ func gopyHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		handleGet(w, r)
 	default:
-		log.Println("GETのみ受け付けます")
+		io.WriteString(w, "GETのみ受け付けます")
 	}
 }
 
@@ -39,13 +39,19 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// [MEMO] /gopy/end が叩かれたら false セットして /gopy/start の無限ループを抜けさせる方法にしよう
+var continueServer = true
+
 func watchStart(w http.ResponseWriter, r *http.Request) {
 	log.Println("監視開始")
 	io.WriteString(w, "監視中。。。")
 
 	var baseTime time.Time
-	for {
-		var nowTime = modTime()
+	for continueServer {
+		nowTime, err := modTime()
+		if err != nil {
+			return // [MEMO] 事象のログ書き込みなど呼び出し関数内で実行済み
+		}
 		if baseTime != nowTime {
 			// [MEMO] 以下３関数は共通のインタフェースでも被せてコマンドパターン化すべきか？
 			// [MEMO] 中でやってること似てる部分あると思うけど、継承のないGoではテンプレートメソッドパターン使いたい時どうする？
@@ -61,15 +67,17 @@ func watchStart(w http.ResponseWriter, r *http.Request) {
 
 func watchEnd(w http.ResponseWriter, r *http.Request) {
 	log.Println("監視終了")
-	// [MEMO] ここでOSイグジットは乱暴？
-	os.Exit(0)
+	continueServer = false
 }
 
-func modTime() time.Time {
+func modTime() (time.Time, error) {
 	fromDir := config.m["fromDir"]
 	fromFile := config.m["fromFile"]
 	from := fromDir + fromFile
 	fp, err := os.Stat(from)
-	handleErr(err)
-	return fp.ModTime()
+	if err != nil {
+		log.Println(err)
+		return time.Now(), err // [MEMO] time.Timeの(Javaで言う)null値がわからない・・・。
+	}
+	return fp.ModTime(), nil
 }

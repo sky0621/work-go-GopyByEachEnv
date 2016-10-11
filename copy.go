@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 )
@@ -18,17 +19,29 @@ func copyToEachDir() {
 
 	for _, to := range toArray {
 		src, err := os.Open(from)
-		handleErr(err)
+		if err != nil {
+			log.Println(err)
+			ExitCode = ExitCodeCopyError
+			return
+		}
 		defer src.Close()
 
 		toSplit := strings.Split(to, "\t")
 		dst, err := os.Create(toSplit[0])
-		handleErr(err)
+		if err != nil {
+			log.Println(err)
+			ExitCode = ExitCodeCopyError
+			return
+		}
 		defer dst.Close()
 
 		fmt.Println("[COPY] " + from + " => " + toSplit[0])
 		_, err = io.Copy(dst, src)
-		handleErr(err)
+		if err != nil {
+			log.Println(err)
+			ExitCode = ExitCodeCopyError
+			return
+		}
 	}
 	fmt.Println("")
 }
@@ -46,8 +59,16 @@ func replaceEachToFile() {
 		toSplit := strings.Split(to, "\t")
 		fp, err = os.OpenFile(toSplit[0], os.O_APPEND, 0777)
 		fp2, err2 = os.Create(toSplit[0] + ".tmp")
-		handleErr(err)
-		handleErr(err2)
+		if err != nil {
+			log.Println(err)
+			ExitCode = ExitCodeCopyError
+			return
+		}
+		if err2 != nil {
+			log.Println(err2)
+			ExitCode = ExitCodeCopyError
+			return
+		}
 		defer fp.Close()
 		defer fp2.Close()
 		scanner := bufio.NewScanner(fp)
@@ -58,7 +79,12 @@ func replaceEachToFile() {
 			writer.WriteString(line + "\r\n")
 		}
 		writer.Flush()
-		handleErr(scanner.Err())
+		err = scanner.Err()
+		if err != nil {
+			log.Println(err)
+			ExitCode = ExitCodeCopyError
+			return
+		}
 	}
 }
 
@@ -71,6 +97,10 @@ func renameTmp() {
 	for _, to := range toArray {
 		toSplit := strings.Split(to, "\t")
 		err = os.Rename(toSplit[0]+".tmp", toSplit[0])
-		handleErr(err)
+		if err != nil {
+			log.Println(err)
+			ExitCode = ExitCodeCopyError
+			return
+		}
 	}
 }

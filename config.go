@@ -2,12 +2,14 @@ package GopyByEachEnv
 
 import (
 	"bufio"
+	"log"
 	"os"
 	"strings"
 )
 
 // [MEMO] argsとconfigまではアプリ起動時に読み込むでOKかな。
-var config = readConfig()
+// [MEMO] config変数もconfig.goファイル内にあれば副作用関数でもテストコードは書きやすいかな。
+var config *Config
 
 // Config ... コピー元ファイルやコピー先などの設定
 type Config struct {
@@ -15,11 +17,15 @@ type Config struct {
 }
 
 // [MEMO] 雑すぎ・・・。
-func readConfig() *Config {
+func readConfig() {
 	var fp *os.File
 	// [MEMO] main.goの階層からの相対パス
 	fp, err := os.OpenFile("config.txt", os.O_RDONLY, 0)
-	handleErr(err)
+	if err != nil {
+		log.Println(err)
+		ExitCode = ExitCodeConfigError
+		return
+	}
 
 	defer fp.Close()
 
@@ -37,7 +43,12 @@ func readConfig() *Config {
 			m[kv[0]] = kv[1]
 		}
 	}
-	handleErr(scanner.Err())
+	err = scanner.Err()
+	if err != nil {
+		log.Println(err)
+		ExitCode = ExitCodeConfigError
+		return
+	}
 
-	return &Config{m: m}
+	config = &Config{m: m}
 }
