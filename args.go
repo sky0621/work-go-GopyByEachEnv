@@ -21,5 +21,5 @@ func parseFlag() *Args {
 	flag.StringVar(&port, "p", defaultPort, "接続先ポート")
 	flag.IntVar(&sleep, "s", defaultSleepSec, "コピー元ファイルの変更監視間隔(秒)")
 	flag.Parse()
-	return &Args{Port: port, SleepSecond: sleep}
+	return &Args{Port: ":" + port, SleepSecond: sleep}
 }

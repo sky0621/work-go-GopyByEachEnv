@@ -14,7 +14,7 @@ func Exec() {
 
 	log.Println("コピー元ファイルの監視を開始します：", args.Port)
 	// [MEMO] graceful というパッケージが書籍に紹介されてるけど、なんかハンドラーに至らず落ちるので諦め。
-	if err := http.ListenAndServe(":7109", nil); err != nil {
+	if err := http.ListenAndServe(args.Port, nil); err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
