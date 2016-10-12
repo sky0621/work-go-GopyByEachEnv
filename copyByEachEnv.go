@@ -22,12 +22,18 @@ var ExitCode = ExitCodeOK
 func Exec() {
 	// [MEMO] こうすればパニック起きても、ここでハンドリングできる？
 	defer func() {
-		log.Println("パニックチェック開始")
+		log.Println("パニックチェック")
 		if err := recover(); err != nil {
-			log.Println(err)
+			log.Printf("パニック発生！リカバー！　Error: %s", err)
 			ExitCode = ExitCodePanic
 		}
 	}()
+
+	readConfig()
+	// [MEMO] configチェックは、ここかなぁ。
+	if config == nil {
+		return // [MEMO] ログ吐きやExitCodeのセットは、readConfig() で済ませてる。 問題発生元操作方針がいいと思う。
+	}
 
 	// [MEMO] 同じhttpでもServeMuxというのもある様子。。。
 	// [MEMO] ルーティングはサードパーティ使うのがよいみたいだけど、このツールではコピー監視の開始・終了だけだからこれで十分
