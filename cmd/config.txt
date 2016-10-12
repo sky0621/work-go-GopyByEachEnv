@@ -1,4 +1,0 @@
-fromDir=C:\work\gotemp\from\
-fromFile=sample.properties
-to=C:\work\gotemp\to01\sample.properties	value2	value3
-to=C:\work\gotemp\to02\sample.properties	value2	value2

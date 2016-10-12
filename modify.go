@@ -23,5 +23,6 @@ func (m *Modifier) isModify() (bool, error) {
 		m.beforeTime = fp.ModTime()
 		return true, nil
 	}
+
 	return false, nil
 }

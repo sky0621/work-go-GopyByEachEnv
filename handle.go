@@ -38,39 +38,51 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// [MEMO] /gopy/end が叩かれたら false セットして /gopy/start の無限ループを抜けさせる方法にしよう
+// /gopy/start の無限ループ操作フラグ
 var continueServer = true
 
 func watchStart(w http.ResponseWriter, r *http.Request) {
 	log.Println("監視開始")
-	io.WriteString(w, "監視中。。。")
+	io.WriteString(w, "監視中。。。\n")
 
 	var baseTime = time.Now()
+
+	log.Println(config.CopySpecs)
 	// [MEMO] configはグローバルにせざるを得ないか。。。 WebServer起動からハンドラーにパラメータ渡しできればいいんだけど。
 	for _, spec := range config.CopySpecs {
-		modifier := Modifier{
-			beforeTime:    baseTime,
-			checkFilePath: spec.CopyFrom.FromDir + spec.CopyFrom.FromFile}
-		for continueServer {
-			doCopy, err := modifier.isModify()
-			if err != nil {
-				log.Println(err)
+		copyFrom := spec.CopyFrom.FromDir + spec.CopyFrom.FromFile
+		log.Println("[コピー元] " + copyFrom)
+		modifier := Modifier{beforeTime: baseTime, checkFilePath: copyFrom}
+		go copyExec(w, modifier, copyFrom, spec.CopyTos)
+	}
+}
+
+func copyExec(w http.ResponseWriter, modifier Modifier, copyFrom string, copyTos []CopyTo) {
+	for continueServer {
+		doCopy, err := modifier.isModify()
+		if err != nil {
+			log.Println(err)
+			io.WriteString(w, "監視対象ファイルの更新日チェック時にエラー発生\n")
+			continueServer = false
+			return
+		}
+		if doCopy {
+			copier := Copier{copyFrom: copyFrom, copyTos: copyTos}
+			// [MEMO] fluentパターン採用。Goでも、この使い方、ありなのか・・・？
+			copier.copyToEachDir().replaceEachToFile().renameTmp()
+			if copier.err != nil {
+				log.Println(copier.err)
+				io.WriteString(w, "監視対象ファイルのコピー時にエラー発生\n")
+				continueServer = false
 				return
 			}
-			if doCopy {
-				log.Println("<<<<< DO COPY >>>>>")
-				// [MEMO] 以下３関数は共通のインタフェースでも被せてコマンドパターン化すべきか？
-				// [MEMO] 中でやってること似てる部分あると思うけど、継承のないGoではテンプレートメソッドパターン使いたい時どうする？
-				// copyToEachDir()
-				// replaceEachToFile()
-				// renameTmp()
-			}
-			time.Sleep(time.Duration(args.SleepSecond) * time.Second)
 		}
+		time.Sleep(time.Duration(args.SleepSecond) * time.Second)
 	}
 }
 
 func watchEnd(w http.ResponseWriter, r *http.Request) {
 	log.Println("監視終了")
+	io.WriteString(w, "監視終了\n")
 	continueServer = false
 }

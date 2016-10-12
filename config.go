@@ -6,6 +6,8 @@ import (
 	"log"
 )
 
+// [MEMO] サブパッケージモジュールで使う機会が発生するかもなので、以降の構造体はexported
+
 // Config ... コピー元ファイルやコピー先などの設定
 type Config struct {
 	CopySpecs []CopySpec
