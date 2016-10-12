@@ -1,26 +1,13 @@
 package GopyByEachEnv
 
 import (
-	"bufio"
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"os"
-	"strings"
 )
-
-// [MEMO] argsとconfigまではアプリ起動時に読み込むでOKかな。
-// [MEMO] config変数もconfig.goファイル内にあれば副作用関数でもテストコードは書きやすいかな。
-var config *Config
-var config2 *Config2
 
 // Config ... コピー元ファイルやコピー先などの設定
 type Config struct {
-	m map[string]string // [MEMO] 構造体の意味なし。。。当初作った config.txt の構造が雑なままとりあえず構造体に持ち込んだだけ
-}
-
-// Config2 ... コピー元ファイルやコピー先などの設定
-type Config2 struct {
 	CopySpecs []CopySpec
 }
 
@@ -49,60 +36,22 @@ type Replace struct {
 	ReplaceTo   string
 }
 
-// ReadConfigParam ...
-type ReadConfigParam struct {
-	targetFile string
-}
-
-func readConfig2(p ReadConfigParam) {
-	file, err := ioutil.ReadFile(p.targetFile)
+// ParseConfig ...
+// [MEMO] main.go起点とテストコード起点とでカレント変わるため config.json 読むためのパスも変わる。それぞれで引数渡さず、main.go起点はデフォルトにしたい。
+// [MEMO] ↑でも、デフォルト引数とかオーバーロードは Go には無いみたい・・・。
+func ParseConfig(targetFilePath string) *Config {
+	file, err := ioutil.ReadFile(targetFilePath)
 	if err != nil {
-		log.Println("config.jsonがファイル自体読み込めない！")
-		log.Println(err)
-		ExitCode = ExitCodeConfigError
-		return
+		log.Printf("%s の読み込みに失敗しました。指定のパスにファイルが存在するか確認してください。 [ERROR] %s", targetFilePath, err)
+		return nil
 	}
-	jsonErr := json.Unmarshal(file, &config2)
-	if jsonErr != nil {
-		log.Println(jsonErr)
-		ExitCode = ExitCodeConfigError
-		return
-	}
-}
 
-// [MEMO] 雑すぎ・・・。
-func readConfig() {
-	var fp *os.File
-	// [MEMO] main.goの階層からの相対パス
-	fp, err := os.OpenFile("config.txt", os.O_RDONLY, 0)
+	var config *Config
+	err = json.Unmarshal(file, &config)
 	if err != nil {
-		log.Println(err)
-		ExitCode = ExitCodeConfigError
-		return
+		log.Printf("%s のJSONとしての解析に失敗しました。指定のファイルがJSONとして正しい形式か確認してください。 [ERROR] %s", targetFilePath, err)
+		return nil
 	}
-
-	defer fp.Close()
-
-	m := map[string]string{}
-	scanner := bufio.NewScanner(fp)
-	for scanner.Scan() {
-		line := scanner.Text()
-		// [MEMO] 設定ファイルの読み込み系のお決まりロジックないしサードパーティ探さないと。。。　そもそもconfig.txtの構造が適当
-		kv := strings.Split(line, "=")
-		v, ok := m[kv[0]]
-		if ok {
-			t := v
-			m[kv[0]] = t + "$" + kv[1]
-		} else {
-			m[kv[0]] = kv[1]
-		}
-	}
-	err = scanner.Err()
-	if err != nil {
-		log.Println(err)
-		ExitCode = ExitCodeConfigError
-		return
-	}
-
-	config = &Config{m: m}
+	// log.Println(config)
+	return config
 }

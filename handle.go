@@ -4,7 +4,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -46,38 +45,32 @@ func watchStart(w http.ResponseWriter, r *http.Request) {
 	log.Println("監視開始")
 	io.WriteString(w, "監視中。。。")
 
-	var baseTime time.Time
-	for continueServer {
-		nowTime, err := modTime()
-		if err != nil {
-			return // [MEMO] 事象のログ書き込みなど呼び出し関数内で実行済み
+	var baseTime = time.Now()
+	// [MEMO] configはグローバルにせざるを得ないか。。。 WebServer起動からハンドラーにパラメータ渡しできればいいんだけど。
+	for _, spec := range config.CopySpecs {
+		modifier := Modifier{
+			beforeTime:    baseTime,
+			checkFilePath: spec.CopyFrom.FromDir + spec.CopyFrom.FromFile}
+		for continueServer {
+			doCopy, err := modifier.isModify()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			if doCopy {
+				log.Println("<<<<< DO COPY >>>>>")
+				// [MEMO] 以下３関数は共通のインタフェースでも被せてコマンドパターン化すべきか？
+				// [MEMO] 中でやってること似てる部分あると思うけど、継承のないGoではテンプレートメソッドパターン使いたい時どうする？
+				// copyToEachDir()
+				// replaceEachToFile()
+				// renameTmp()
+			}
+			time.Sleep(time.Duration(args.SleepSecond) * time.Second)
 		}
-		if baseTime != nowTime {
-			// [MEMO] 以下３関数は共通のインタフェースでも被せてコマンドパターン化すべきか？
-			// [MEMO] 中でやってること似てる部分あると思うけど、継承のないGoではテンプレートメソッドパターン使いたい時どうする？
-			copyToEachDir()
-			replaceEachToFile()
-			renameTmp()
-			baseTime = nowTime
-		}
-
-		time.Sleep(time.Duration(args.SleepSecond) * time.Second)
 	}
 }
 
 func watchEnd(w http.ResponseWriter, r *http.Request) {
 	log.Println("監視終了")
 	continueServer = false
-}
-
-func modTime() (time.Time, error) {
-	fromDir := config.m["fromDir"]
-	fromFile := config.m["fromFile"]
-	from := fromDir + fromFile
-	fp, err := os.Stat(from)
-	if err != nil {
-		log.Println(err)
-		return time.Now(), err // [MEMO] time.Timeの(Javaで言う)null値がわからない・・・。
-	}
-	return fp.ModTime(), nil
 }

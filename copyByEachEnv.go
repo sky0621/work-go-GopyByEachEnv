@@ -5,34 +5,34 @@ import (
 	"net/http"
 )
 
-// [MEMO] 自明と思われるものでも何かしらコメント書かないとgolintでWARN出るのは、けっこうきつい。
 // アプリの終了コード
 const (
 	ExitCodeOK          int = iota // 0
-	ExitCodeError                  // 1
-	ExitCodeConfigError            // 2
-	ExitCodeCopyError              // 3
-	ExitCodePanic                  // 4
+	ExitCodeConfigError            // 1
+	ExitCodeCopyError              // 2
+	ExitCodePanic                  // 3
 )
 
-// ExitCode ... 終了コード上書き用にデフォルトをOKでセット
+// ExitCode ... デフォルトOK
 var ExitCode = ExitCodeOK
+
+var config *Config
 
 // Exec ... エラー時は終了コードを上書き！
 func Exec() {
+
 	// [MEMO] こうすればパニック起きても、ここでハンドリングできる？
 	defer func() {
-		log.Println("パニックチェック")
 		if err := recover(); err != nil {
 			log.Printf("パニック発生！リカバー！　Error: %s", err)
 			ExitCode = ExitCodePanic
 		}
 	}()
 
-	readConfig()
-	// [MEMO] configチェックは、ここかなぁ。
+	config = ParseConfig("config.json")
 	if config == nil {
-		return // [MEMO] ログ吐きやExitCodeのセットは、readConfig() で済ませてる。 問題発生元操作方針がいいと思う。
+		ExitCode = ExitCodeConfigError
+		return
 	}
 
 	// [MEMO] 同じhttpでもServeMuxというのもある様子。。。
@@ -43,7 +43,6 @@ func Exec() {
 	// [MEMO] graceful というパッケージが書籍に紹介されてるけど、なんかハンドラーに至らず落ちるので諦め。
 	if err := http.ListenAndServe(args.Port, nil); err != nil {
 		log.Println(err)
-		ExitCode = ExitCodeError
+		ExitCode = ExitCodeCopyError
 	}
-	log.Println("コピー元ファイルの監視を終了します：", args.Port)
 }
