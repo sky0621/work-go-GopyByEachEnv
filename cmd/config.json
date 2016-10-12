@@ -1,0 +1,48 @@
+{
+  "CopySpecs": [
+    {
+      "CopyFrom": {
+        "FromDir": "sample/from/",
+        "FromFile": "sample.properties"
+      },
+      "CopyTos": [
+        {
+          "ToDir": "sample/to01/",
+          "ToFile": "sample.properties",
+          "Replaces": [
+            {
+              "ReplaceFrom": "returnPath=returnPath01@example.jp",
+              "ReplaceTo": "returnPath=convertedPath01@example.jp"
+            },
+            {
+              "ReplaceFrom": "textTemplate.encoding=UTF-8",
+              "ReplaceTo": "textTemplate.encoding=SJIS"
+            }
+          ]
+        },
+        {
+          "ToDir": "sample/to02/",
+          "ToFile": "sampleB.properties"
+        }
+      ]
+    },
+    {
+      "CopyFrom": {
+        "FromDir": "sample/from/",
+        "FromFile": "sample2.properties"
+      },
+      "CopyTos": [
+        {
+          "ToDir": "sample/to01/",
+          "ToFile": "sample2b.properties",
+          "Replaces": [
+            {
+              "ReplaceFrom": "subject=メール２",
+              "ReplaceTo": "subject=メール２(コンバート)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
