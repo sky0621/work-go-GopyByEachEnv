@@ -47,11 +47,10 @@ func watchStart(w http.ResponseWriter, r *http.Request) {
 
 	var baseTime = time.Now()
 
-	log.Println(config.CopySpecs)
+	// log.Println(config.CopySpecs)
 	// [MEMO] configはグローバルにせざるを得ないか。。。 WebServer起動からハンドラーにパラメータ渡しできればいいんだけど。
 	for _, spec := range config.CopySpecs {
 		copyFrom := spec.CopyFrom.FromDir + spec.CopyFrom.FromFile
-		log.Println("[コピー元] " + copyFrom)
 		modifier := Modifier{beforeTime: baseTime, checkFilePath: copyFrom}
 		go copyExec(w, modifier, copyFrom, spec.CopyTos)
 	}

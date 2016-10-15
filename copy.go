@@ -27,6 +27,7 @@ func (c *Copier) copyToEachDir() *Copier {
 		return c
 	}
 	from, err := os.Open(c.copyFrom)
+	log.Println("[コピー元] " + from.Name())
 	if err != nil {
 		log.Println(err)
 		c.err = err
@@ -35,7 +36,10 @@ func (c *Copier) copyToEachDir() *Copier {
 	defer from.Close()
 
 	for _, copyTo := range c.copyTos {
+		from.Seek(0, 0) // 毎回、読み込み位置をリセットしておかないと同一ファイルからの読み込みは２回目以降サイズ０
+
 		to, toErr := os.Create(copyTo.ToDir + copyTo.ToFile)
+		log.Println("[コピー先] " + to.Name())
 		if toErr != nil {
 			log.Println(toErr)
 			c.err = toErr
@@ -43,7 +47,8 @@ func (c *Copier) copyToEachDir() *Copier {
 		}
 		defer to.Close()
 
-		_, cpErr := io.Copy(to, from)
+		size, cpErr := io.Copy(to, from)
+		log.Printf("コピー実行サイズ： %d\n", size)
 		if cpErr != nil {
 			log.Println(cpErr)
 			c.err = cpErr
