@@ -1,6 +1,0 @@
-subject=メール１
-from=from01@example.jp
-replyTo=replyTo01@example.jp
-returnPath=returnPath01@example.jp
-textTemplate.path=mail/template/test01.vm
-textTemplate.encoding=UTF-8

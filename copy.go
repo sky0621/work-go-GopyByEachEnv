@@ -94,32 +94,31 @@ func (c *Copier) replaceEachToFile() *Copier {
 		writer.Flush()
 
 		scnErr := scanner.Err()
-		if scnErr != nil {
-			log.Println(scnErr)
-			c.err = scnErr
+		if handleErr(c, scnErr) {
 			return c
 		}
 	}
 	return c
 }
 
-func (c *Copier) renameTmp() {
-	// FIXME replaceEachToFile()のデバッグが終わったら実装！
+func (c *Copier) renameTmp() *Copier {
+	if c.err != nil {
+		return c
+	}
+	for _, copyTo := range c.copyTos {
+		err := os.Rename(copyTo.ToDir+copyTo.ToFile+".tmp", copyTo.ToDir+copyTo.ToFile)
+		if handleErr(c, err) {
+			return c
+		}
+	}
+	return c
 }
 
-// // [MEMO] とりあえず作った版にしても、雑さが・・・
-// func renameTmp() {
-// 	var err error
-// 	toFiles := config.m["to"]
-// 	toArray := strings.Split(toFiles, "$")
-//
-// 	for _, to := range toArray {
-// 		toSplit := strings.Split(to, "\t")
-// 		err = os.Rename(toSplit[0]+".tmp", toSplit[0])
-// 		if err != nil {
-// 			log.Println(err)
-// 			ExitCode = ExitCodeCopyError
-// 			return
-// 		}
-// 	}
-// }
+func handleErr(c *Copier, e error) bool {
+	if e == nil {
+		return false
+	}
+	log.Println(e)
+	c.err = e
+	return true
+}
