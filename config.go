@@ -54,6 +54,8 @@ func ParseConfig(targetFilePath string) *Config {
 		log.Printf("%s のJSONとしての解析に失敗しました。指定のファイルがJSONとして正しい形式か確認してください。 [ERROR] %s", targetFilePath, err)
 		return nil
 	}
-	// log.Println(config)
+
+	// [MEMO] パース後の config 内の各要素が想定された構造・値であるかのチェック（バリデーション？）もすべき。何かセオリーある？
+
 	return config
 }

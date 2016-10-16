@@ -14,6 +14,7 @@ type Args struct {
 	SleepSecond int
 }
 
+// [MEMO] flag使ってる場合のテストコードって、どうやって書くんだ？
 func parseFlag() *Args {
 	var port string
 	var sleep int
