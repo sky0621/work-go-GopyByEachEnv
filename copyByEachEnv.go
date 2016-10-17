@@ -13,14 +13,22 @@ const (
 	ExitCodePanic                  // 3
 )
 
+/*
+ * 【グローバル】
+ */
+
 // ExitCode ... デフォルトOK
 var ExitCode = ExitCodeOK
+
+// args ... コマンドライン引数
+var args *Args
 
 // [MEMO] グローバル・・・。嫌だったら、httpハンドラー内に渡すには、（リクエストごとにゴルーチンらしいから）チャネル使う？
 var config *Config
 
 // Exec ... エラー時は終了コードを上書き！
-func Exec() {
+func Exec(a *Args) {
+	args = a // [MEMO] ...
 
 	// [MEMO] こうすればパニック起きても、ここでハンドリングできる？
 	// [MEMO] httpハンドラー内がリクエストごとにゴルーチン実行らしく、その中でパニック起きても、ここに飛んでこない・・・。パニックそもそも起こすべきじゃないかもだけど、ちょっと検討必要。
