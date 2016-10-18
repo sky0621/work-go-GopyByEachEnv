@@ -23,21 +23,21 @@ type CopySpec struct {
 
 // CopyFrom ...
 type CopyFrom struct {
-	FromDir  string `valid:"required"`
+	FromDir  string `valid:"required,"`
 	FromFile string `valid:"required"`
 }
 
 // CopyTo ...
 type CopyTo struct {
-	ToDir    string
-	ToFile   string
+	ToDir    string `valid:"required"`
+	ToFile   string `valid:"required"`
 	Replaces []Replace
 }
 
 // Replace ...
 type Replace struct {
-	ReplaceFrom string
-	ReplaceTo   string
+	ReplaceFrom string `valid:"required"`
+	ReplaceTo   string `valid:"required"`
 }
 
 // ParseConfig ...
@@ -67,12 +67,34 @@ func ParseConfig(targetFilePath string) *Config {
 // 採用バリデーター　https://github.com/asaskevich/govalidator
 // [MEMO] 構造体が入れ子だと見てくれない様子なので、回しながらチェック
 func validateConfig(config *Config) bool {
+	var isErr bool
 	for _, spec := range config.CopySpecs {
 		_, err := govalidator.ValidateStruct(spec.CopyFrom)
-		if err == nil {
+		if err != nil {
+			log.Printf("設定ファイル内要素のバリデーションエラー [ERROR] %s\n", err)
+			isErr = true
+		}
+		if len(spec.CopyTos) < 1 {
+			log.Printf("設定ファイル内要素のバリデーションエラー [ERROR] CopyTos: non zero value required\n")
+			isErr = true
 			continue
 		}
-		log.Println("error: " + err.Error())
+		for _, copyTo := range spec.CopyTos {
+			_, err := govalidator.ValidateStruct(copyTo)
+			if err != nil {
+				log.Printf("設定ファイル内要素のバリデーションエラー [ERROR] %s\n", err)
+				isErr = true
+			}
+			for _, replace := range copyTo.Replaces {
+				_, err := govalidator.ValidateStruct(replace)
+				if err != nil {
+					log.Printf("設定ファイル内要素のバリデーションエラー [ERROR] %s\n", err)
+					isErr = true
+				}
+			}
+		}
+	}
+	if isErr {
 		return false
 	}
 	return true
