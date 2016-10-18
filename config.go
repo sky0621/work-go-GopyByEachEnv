@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+
+	"github.com/asaskevich/govalidator"
 )
 
 // [MEMO] サブパッケージモジュールで使う機会が発生するかもなので、以降の構造体はexported
@@ -21,8 +23,8 @@ type CopySpec struct {
 
 // CopyFrom ...
 type CopyFrom struct {
-	FromDir  string
-	FromFile string
+	FromDir  string `valid:"required"`
+	FromFile string `valid:"required"`
 }
 
 // CopyTo ...
@@ -55,7 +57,23 @@ func ParseConfig(targetFilePath string) *Config {
 		return nil
 	}
 
-	// [MEMO] パース後の config 内の各要素が想定された構造・値であるかのチェック（バリデーション？）もすべき。何かセオリーある？
+	if !validateConfig(config) {
+		return nil
+	}
 
 	return config
+}
+
+// 採用バリデーター　https://github.com/asaskevich/govalidator
+// [MEMO] 構造体が入れ子だと見てくれない様子なので、回しながらチェック
+func validateConfig(config *Config) bool {
+	for _, spec := range config.CopySpecs {
+		_, err := govalidator.ValidateStruct(spec.CopyFrom)
+		if err == nil {
+			continue
+		}
+		log.Println("error: " + err.Error())
+		return false
+	}
+	return true
 }
